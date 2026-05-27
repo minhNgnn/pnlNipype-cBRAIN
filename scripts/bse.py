@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from plumbum import cli, FG
-from plumbum.cmd import fslroi, ImageMath
+from plumbum.cmd import fslroi, ImageMath,fslselectvols
 from conversion import read_bvals
 import os
 from util import load_nifti, save_nifti, B0_THRESHOLD
@@ -92,7 +92,7 @@ class App(cli.Application):
                     # Load the given dwi to get image data
                     dwi= load_nifti(self.dwi._path)
                     hdr= dwi.header
-                    mri= dwi.get_fdata()
+                    mri= dwi.get_data()
 
                     avg_bse= np.mean(mri[:,:,:,idx], axis= 3)
 
@@ -101,7 +101,13 @@ class App(cli.Application):
 
 
                 elif self.all:
-                    fslroi[self.dwi, self.out, idx, len(idx)] & FG
+                    #print(fslroi[self.dwi, self.out, idx, len(idx)])
+                    #fslroi[self.dwi, self.out, idx, len(idx)] & FG
+
+                    # modified by AVA 05.05.2026
+                    # issue wrong b0 filtering https://github.com/pnlbwh/pnlNipype/issues/132
+                    idx_converted_for_selection = ",".join(str(x) for x in idx)
+                    fslselectvols["-i", self.dwi, "-o", self.out, "--vols=" + idx_converted_for_selection] & FG
 
 
             else:
